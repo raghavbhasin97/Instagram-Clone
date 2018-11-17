@@ -33,13 +33,13 @@ class Comment: BaseViewController {
         return table
     }()
     
-    lazy var commentText: UITextField = {
-        let field = UITextField()
-        field.autocorrectionType = .no
-        field.placeholder = "Enter your comment"
-        field.addTarget(self, action: #selector(shouldEnable), for: .editingChanged)
-        field.delegate = self
-        return field
+    lazy var commentText: PlaceholderTextView = {
+        let text = PlaceholderTextView(placeholder: "Enter your comment")
+        text.autocorrectionType = .no
+        text.delegate = self
+        text.isScrollEnabled = false
+        text.font = .systemFont(ofSize: 16)
+        return text
     }()
     
     lazy var submit: UIButton = {
@@ -53,24 +53,20 @@ class Comment: BaseViewController {
     }()
     
     lazy var containerView: UIView = {
-        let container = UIView()
-        container.backgroundColor = .white
-        container.frame = CGRect(x: 0, y: 0, width: 100, height: 50)
-        
+        let container = CommentInputAccessory(frame: CGRect(x: 0, y: 0, width: 100, height: 50))
         container.addSubview(submit)
         container.addConstraintsWithFormat(format: "H:[v0(50)]-12-|", views: submit)
-        container.addConstraintsWithFormat(format: "V:|[v0]|", views: submit)
+        container.addConstraintsWithFormat(format: "V:[v0]-6-|", views: submit)
         
         container.addSubview(commentText)
-        commentText.leftAnchor.constraint(equalTo: container.leftAnchor, constant: 12).isActive = true
-        commentText.rightAnchor.constraint(equalTo: submit.leftAnchor, constant: 4).isActive = true
-        container.addConstraintsWithFormat(format: "V:|[v0]|", views: commentText)
+        commentText.leftAnchor.constraint(equalTo: container.leftAnchor, constant: 8).isActive = true
+        commentText.rightAnchor.constraint(equalTo: submit.leftAnchor, constant: -4).isActive = true
+        container.addConstraintsWithFormat(format: "V:|-6-[v0]-6-|", views: commentText)
         let line: UIView = {
             let view = UIView()
             view.backgroundColor = .black
             return view
         }()
-        
         container.addSubview(line)
         container.addConstraintsWithFormat(format: "H:|[v0]|", views: line)
         line.topAnchor.constraint(equalTo: container.topAnchor).isActive = true
@@ -130,7 +126,7 @@ class Comment: BaseViewController {
     @objc func submitComment() {
         let comment = commentText.text
         if let post = post {
-            commentText.text = ""
+            commentText.clearText()
             shouldEnable()
             let data = postComment(comment: comment!, id: post.id, uid: post.uid)
             let newComment = CommentItem(data: data)
@@ -163,6 +159,8 @@ extension Comment: UITableViewDelegate, UITableViewDataSource {
 
 }
 
-extension Comment: UITextFieldDelegate {
-    
+extension Comment: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        shouldEnable()
+    }
 }

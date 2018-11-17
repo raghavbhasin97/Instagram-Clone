@@ -13,6 +13,7 @@ class NewPost: UICollectionViewController {
     
     var images: [UIImage] = []
     var assests: [PHAsset] = []
+    var selectedIndex = 0
     
     override var prefersStatusBarHidden: Bool {
         return true
@@ -64,7 +65,7 @@ class NewPost: UICollectionViewController {
         let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerID, for: indexPath) as! PhotoCell
         headerView = header
         if assests.count > 0 {
-            loadResolutionImage(index: 0)
+            loadResolutionImage(index: selectedIndex)
         }
         return header
     }
@@ -87,7 +88,9 @@ class NewPost: UICollectionViewController {
     }
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-       loadResolutionImage(index: indexPath.item)
+        
+        selectedIndex = indexPath.item
+        loadResolutionImage(index: selectedIndex)
         collectionView.scrollToItem(at: IndexPath(item: 0, section: 0), at: .bottom, animated: true)
     }
     

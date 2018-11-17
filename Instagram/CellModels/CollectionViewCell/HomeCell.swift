@@ -1,8 +1,14 @@
 import UIKit
 
+protocol HomeCellDelegate {
+    func sharePost(_ image: UIImage)
+    func showComments(_ post: Post)
+}
+
 class HomeCell: BaseCollectionViewCell {
     let cellID = "HomeCellPhotoCell"
-    var main: UIViewController?
+    
+    var delegate: HomeCellDelegate?
     let currentUser = UserDefaults.standard.object(forKey: "uid") as! String
     
     let profileSize: CGFloat = 40.0
@@ -211,9 +217,9 @@ class HomeCell: BaseCollectionViewCell {
     }
     
     @objc func showComments() {
-        let controller = Comment()
-        controller.post = post
-        main?.navigationController?.pushViewController(controller, animated: true)
+        if let post = post {
+            delegate?.showComments(post)
+        }
     }
     
     @objc func likePost() {
@@ -260,8 +266,7 @@ class HomeCell: BaseCollectionViewCell {
     
     @objc func sharePost() {
         if let image = imageView.visibleCells[0] as? PhotoCell {
-            let share = UIActivityViewController(activityItems: [image.imageView.image!], applicationActivities: [])
-            main?.present(share, animated: true, completion: nil)
+            delegate?.sharePost(image.imageView.image!)
         }
     }
     

@@ -123,6 +123,13 @@ class SharePost: BaseViewController {
         
     }
     
+    fileprivate func setupSupplementaryView() {
+        view.addSubview(supplementartImages)
+        view.addConstraintsWithFormat(format: "H:|[v0]|", views: supplementartImages)
+        supplementartImages.topAnchor.constraint(equalTo: container.bottomAnchor).isActive = true
+        supplementartImages.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 50).isActive = true
+    }
+    
     override func setup() {
         view.backgroundColor = .shareBackground
         navigationItem.title = "New Post"
@@ -134,15 +141,12 @@ class SharePost: BaseViewController {
         let padding = view.frame.height * 0.0115
         setupComponents(padding, size)
         setupSupplementaryContainer()
+        setupSupplementaryView()
         
-        
-        view.addSubview(supplementartImages)
-        view.addConstraintsWithFormat(format: "H:|[v0]|", views: supplementartImages)
-        supplementartImages.topAnchor.constraint(equalTo: container.bottomAnchor).isActive = true
-        supplementartImages.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 50).isActive = true
         textView.inputAccessoryView = buttonContainer
         supplementartImages.register(CancelablePhotoCell.self, forCellWithReuseIdentifier: cellID)
         textView.becomeFirstResponder()
+        
     }
     
     fileprivate func doneUploading() {
@@ -194,6 +198,10 @@ class SharePost: BaseViewController {
                         cache.setObject(self.postImage!, forKey: downloadUrl as AnyObject)
                         incrementUserIntegerMetaDataByOne(child: uid!, key: "posts", completion: nil)
                         var count = 0
+                        if self.supplementaryImages.count == 0 {
+                            self.doneUploading()
+                            return
+                        }
                         for image in self.supplementaryImages {
                             let key = "url" + String(count)
                             count += 1
@@ -257,7 +265,7 @@ extension SharePost: UIImagePickerControllerDelegate, UINavigationControllerDele
     
     @objc fileprivate func takeImage() {
         picker.sourceType = .camera
-        picker.cameraDevice = .front
+        picker.cameraDevice = .rear
         present(picker, animated: true, completion: nil)
     }
     
@@ -272,6 +280,11 @@ extension SharePost: UIImagePickerControllerDelegate, UINavigationControllerDele
             supplementaryImages.append(data)
         }
         supplementartImages.reloadData()
+        textView.becomeFirstResponder()
+        dismiss(animated: true, completion: nil)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
         textView.becomeFirstResponder()
         dismiss(animated: true, completion: nil)
     }

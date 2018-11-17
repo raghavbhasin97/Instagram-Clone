@@ -1,7 +1,18 @@
 import UIKit
 
+
+protocol SnappedPhotoDelegate {
+    func backEvent()
+    func shareEvent(image: UIImage)
+}
+
+protocol EditPhotoViewDelegate {
+    func setImage(image: UIImage)
+}
+
 class SnappedPhoto: UIView {
-    var viewController: UIViewController?
+    
+    var delegate: SnappedPhotoDelegate?
     var image: UIImage? {
         didSet {
             imageView.image = image
@@ -11,6 +22,13 @@ class SnappedPhoto: UIView {
         super.init(frame: frame)
         setup()
     }
+    
+    let supportingView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .black
+        view.alpha = 0.5
+        return view
+    }()
     
     let imageView: UIImageView = {
         let image = UIImageView()
@@ -35,15 +53,32 @@ class SnappedPhoto: UIView {
         return button
     }()
     
+    lazy var drawButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage( #imageLiteral(resourceName: "draw").withRenderingMode(.alwaysTemplate), for: .normal)
+        button.addTarget(self, action: #selector(startDrawing), for: .touchUpInside)
+        button.tintColor = .white
+        return button
+    }()
+    
+    lazy var textButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setImage( #imageLiteral(resourceName: "text").withRenderingMode(.alwaysTemplate), for: .normal)
+        button.addTarget(self, action: #selector(startAddingText), for: .touchUpInside)
+        button.tintColor = .white
+        return button
+    }()
+    
     lazy var postButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("New Post", for: .normal)
+        button.setTitle("Share", for: .normal)
         button.addTarget(self, action: #selector(post), for: .touchUpInside)
-        button.titleLabel?.font = .boldSystemFont(ofSize: 16)
+        button.titleLabel?.font = .systemFont(ofSize: 15)
         button.setTitleColor(.black, for: .normal)
         button.backgroundColor = .white
         button.clipsToBounds = true
-        button.layer.cornerRadius = 4.0
+        button.layer.cornerRadius = 20.0
+        button.titleLabel?.font = .systemFont(ofSize: 14)
         return button
     }()
     
@@ -71,32 +106,41 @@ class SnappedPhoto: UIView {
         addConstraintsWithFormat(format: "V:|[v0]|", views: imageView)
     }
     
+    fileprivate func setupSupportingView() {
+        addSubview(supportingView)
+        addConstraintsWithFormat(format: "H:|[v0]|", views: supportingView)
+        addConstraintsWithFormat(format: "V:|[v0(58)]", views: supportingView)
+    }
+    
+    fileprivate func setupDraw() {
+        addSubview(drawButton)
+        addConstraintsWithFormat(format: "V:|-12-[v0(50)]", views: drawButton)
+    }
+    
+    fileprivate func setupText() {
+        addSubview(textButton)
+        addConstraintsWithFormat(format: "V:|-12-[v0(50)]", views: textButton)
+    }
+    
     fileprivate func setup() {
+        backgroundColor = .black
         setupImageView()
+        setupSupportingView()
         setupBack()
         setupPostButton()
         setupSaveButton()
+        setupDraw()
+        setupText()
+        //Horizontal Constraints
+        addConstraintsWithFormat(format: "H:|-12-[v0(50)]-7.5-[v1(50)]", views: drawButton, textButton)
     }
     
     @objc fileprivate func backPressed() {
-        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
-        let attributedTitle = NSMutableAttributedString()
-        attributedTitle.append(NSAttributedString(string: "Discard Photo?", attributes: [NSAttributedString.Key.font : UIFont.boldSystemFont(ofSize: 15), NSAttributedString.Key.foregroundColor: UIColor.black]))
-        attributedTitle.append(NSAttributedString(string: "\n\n", attributes: [NSAttributedString.Key.font : UIFont.systemFont(ofSize: 4)]))
-        attributedTitle.append(NSAttributedString(string: "If you go back now, you will lose your photo.", attributes: [NSAttributedString.Key.font : UIFont.systemFont(ofSize: 12), NSAttributedString.Key.foregroundColor: UIColor.gray]))
-        
-        alert.setValue(attributedTitle, forKey: "attributedTitle")
-        alert.addAction(UIAlertAction(title: "Discard", style: .destructive, handler: {[unowned self] (_) in
-            self.removeFromSuperview()
-        }))
-        alert.addAction(UIAlertAction(title: "Keep", style: .cancel, handler: nil))
-        viewController?.present(alert, animated: true, completion: nil)
+       delegate?.backEvent()
     }
     
     @objc fileprivate func post() {
-        let controller = SharePost()
-        controller.postImage = image
-        viewController?.navigationController?.pushViewController(controller, animated: true)
+        delegate?.shareEvent(image: image!)
     }
     
     @objc fileprivate func save() {
@@ -106,12 +150,12 @@ class SnappedPhoto: UIView {
     @objc fileprivate func finishedSaving(_ image: UIImage, didFinishSavingWithError error: NSError?, contextInfo: UnsafeRawPointer) {
         let saveLabel: UILabel = {
             let label = UILabel()
-            label.text = "Image Saved"
+            label.text = "Image Saved!"
             label.numberOfLines = 0
             label.backgroundColor = .save
             label.textColor = .white
-            label.font = .boldSystemFont(ofSize: 18)
-            label.frame = CGRect(x: 0, y: 0, width: 150, height: 60)
+            label.font = .boldSystemFont(ofSize: 15)
+            label.frame = CGRect(x: 0, y: 0, width: 120, height: 50)
             label.textAlignment = .center
             label.clipsToBounds = true
             label.layer.cornerRadius = 6.0
@@ -130,6 +174,38 @@ class SnappedPhoto: UIView {
                 saveLabel.removeFromSuperview()
             })
         }
+    }
+    
+    @objc fileprivate func startDrawing() {
+        let drawView = DrawingView()
+        drawView.delegate = self
+        drawView.image = image
+        drawView.alpha = 0
+        addSubview(drawView)
+        drawView.frame = frame
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
+            drawView.alpha = 1.0
+        }, completion: nil)
+    }
+    
+    @objc fileprivate func startAddingText() {
+        let drawView = TextView()
+        drawView.delegate = self
+        drawView.image = image
+        drawView.alpha = 0
+        addSubview(drawView)
+        drawView.frame = frame
+        UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.5, initialSpringVelocity: 0.5, options: .curveEaseOut, animations: {
+            drawView.alpha = 1.0
+        }, completion: nil)
+    }
+    
+}
+
+extension SnappedPhoto: EditPhotoViewDelegate {
+    func setImage(image: UIImage) {
+        self.image = image
+        imageView.image = image
     }
     
 }

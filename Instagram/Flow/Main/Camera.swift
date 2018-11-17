@@ -5,6 +5,7 @@ import AVFoundation
 class Camera: BaseViewController {
 
     let output = AVCapturePhotoOutput()
+    var previewContainer: SnappedPhoto?
     override var prefersStatusBarHidden: Bool {
         return true
     }
@@ -87,9 +88,10 @@ extension Camera: AVCapturePhotoCaptureDelegate {
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let data = photo.fileDataRepresentation() {
             let image = UIImage(data: data)
-            let previewContainer = SnappedPhoto(frame: view.frame)
+            previewContainer = SnappedPhoto(frame: view.frame)
+            guard let  previewContainer = previewContainer else { return }
             previewContainer.image = image
-            previewContainer.viewController = self
+            previewContainer.delegate = self
             view.addSubview(previewContainer)
             view.addConstraintsWithFormat(format: "H:|[v0]|", views: previewContainer)
             view.addConstraintsWithFormat(format: "V:|[v0]|", views: previewContainer)
@@ -97,4 +99,31 @@ extension Camera: AVCapturePhotoCaptureDelegate {
         }
         
     }
+}
+
+
+extension Camera: SnappedPhotoDelegate {
+    
+    func shareEvent(image: UIImage) {
+        let controller = SharePost()
+        controller.postImage = image
+        navigationController?.pushViewController(controller, animated: true)
+    }
+    
+    func backEvent() {
+        let alert = UIAlertController(title: nil, message: nil, preferredStyle: .alert)
+        let attributedTitle = NSMutableAttributedString()
+        attributedTitle.append(NSAttributedString(string: "Discard Photo?", attributes: [NSAttributedString.Key.font : UIFont.boldSystemFont(ofSize: 15), NSAttributedString.Key.foregroundColor: UIColor.black]))
+        attributedTitle.append(NSAttributedString(string: "\n\n", attributes: [NSAttributedString.Key.font : UIFont.systemFont(ofSize: 4)]))
+        attributedTitle.append(NSAttributedString(string: "If you go back now, you will lose your photo.", attributes: [NSAttributedString.Key.font : UIFont.systemFont(ofSize: 12), NSAttributedString.Key.foregroundColor: UIColor.gray]))
+        
+        alert.setValue(attributedTitle, forKey: "attributedTitle")
+        alert.addAction(UIAlertAction(title: "Discard", style: .destructive, handler: {[unowned self] (_) in
+            self.previewContainer?.removeFromSuperview()
+        }))
+        alert.addAction(UIAlertAction(title: "Keep", style: .cancel, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+    
+    
 }

@@ -29,6 +29,18 @@ extension UIView {
     func center_Y(item: UIView) {
         center_Y(item: item, constant: 0)
     }
+    
+    func dataForViewAsImage() -> Data?{
+        let size = frame.size
+        UIGraphicsBeginImageContextWithOptions(size, true, 0)
+        drawHierarchy(in: bounds, afterScreenUpdates: true)
+        guard let i = UIGraphicsGetImageFromCurrentImageContext(),
+            let data = i.jpegData(compressionQuality: 1.0)
+            else {return nil}
+        UIGraphicsEndImageContext()
+        
+        return data
+    }
 }
 
 

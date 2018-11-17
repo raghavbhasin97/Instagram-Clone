@@ -32,7 +32,7 @@ class Like: UICollectionViewController {
             return cell
         } else {
             let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellID, for: indexPath) as! HomeCell
-            cell.main = self
+            cell.delegate = self
             cell.post = likesPost[indexPath.item]
             cell.likeButton.removeFromSuperview()
             cell.bookMarkButton.removeFromSuperview()
@@ -67,3 +67,16 @@ extension Like: UICollectionViewDelegateFlowLayout {
     }
 }
 
+
+extension Like: HomeCellDelegate {
+    func showComments(_ post: Post) {
+        let controller = Comment()
+        controller.post = post
+        navigationController?.pushViewController(controller, animated: true)
+    }
+    
+    func sharePost(_ image: UIImage) {
+        let share = UIActivityViewController(activityItems: [image], applicationActivities: [])
+        present(share, animated: true, completion: nil)
+    }
+}

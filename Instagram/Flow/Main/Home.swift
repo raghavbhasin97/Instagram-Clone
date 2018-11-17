@@ -2,6 +2,7 @@ import UIKit
 import Firebase
 
 class Home: UICollectionViewController {
+    let cellIDEmpty = "EmptyHomeCell"
     let cellID = "homeCell"
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,6 +31,7 @@ class Home: UICollectionViewController {
         collectionView.alwaysBounceVertical = true
         collectionView.showsVerticalScrollIndicator = false
         collectionView.register(HomeCell.self, forCellWithReuseIdentifier: cellID)
+        collectionView.register(EmptyHomeCell.self, forCellWithReuseIdentifier: cellIDEmpty)
         navigationItem.titleView = titleView
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "showCamera").withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(showCamera))
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "send2").withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(shareButtonPressed))
@@ -48,12 +50,17 @@ class Home: UICollectionViewController {
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return posts.count
+        return posts.count == 0 ? 1 : posts.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if posts.count == 0 {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIDEmpty, for: indexPath) as! EmptyHomeCell
+            cell.delegate = self
+            return cell
+        }
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellID, for: indexPath) as! HomeCell
-        cell.main = self
+        cell.delegate = self
         if indexPath.item >= posts.count { return cell }
         cell.post = posts[indexPath.item]
         return cell
@@ -89,24 +96,43 @@ class Home: UICollectionViewController {
     @objc func postedNotification() {
         refreshAction()
     }
-    
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-       // refreshAction()
-    }
-    
 }
 
 extension Home: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        if indexPath.item >= posts.count { return CGSize.zero}
-        let textHeight = heightForView(post: posts[indexPath.item], width: view.frame.width - 16)
-        var height: CGFloat = view.frame.width + 106 + textHeight + 5
-        if posts[indexPath.item].additionalImages.count > 0 {
-            height += 10
+        if posts.count == 0 {
+            let height = view.frame.height - (tabBarController?.tabBar.frame.height ?? 0) - (navigationController?.navigationBar.frame.height ?? 0) - UIApplication.shared.statusBarFrame.height
+            return CGSize(width: view.frame.width, height: height)
+        } else {
+            if indexPath.item >= posts.count { return CGSize.zero}
+            let textHeight = heightForView(post: posts[indexPath.item], width: view.frame.width - 16)
+            var height: CGFloat = view.frame.width + 106 + textHeight + 5
+            if posts[indexPath.item].additionalImages.count > 0 {
+                height += 10
+            }
+            return CGSize(width: view.frame.width, height: height)
         }
-        return CGSize(width: view.frame.width, height: height)
     }
 }
 
+extension Home: HomeCellDelegate {
+    func showComments(_ post: Post) {
+        let controller = Comment()
+        controller.post = post
+        navigationController?.pushViewController(controller, animated: true)
+    }
+    
+    func sharePost(_ image: UIImage) {
+         let share = UIActivityViewController(activityItems: [image], applicationActivities: [])
+        present(share, animated: true, completion: nil)
+    }
+}
+
+extension Home: EmptyHomeCellDelegate {
+    func firstPost() {
+        let flow = UICollectionViewFlowLayout()
+        let controller = UINavigationController(rootViewController:  NewPost(collectionViewLayout: flow))
+        present(controller, animated: true, completion: nil)
+    }
+    
+}
