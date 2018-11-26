@@ -9,7 +9,7 @@ An iOS clone of instagram built using Swift 4.2, Firebase, Cocoa Touch and AVFou
 ## Features
 
 - [x] Registeration of new users/ Login functionality.
-- [x] User Home feed that includes and accumulation of User's and Following User's posts.
+- [x] User Home feed that includes an accumulation of User's and Following User's posts.
 - [x] Search for Users on the app.
 - [x] Like, share and comment on posts.
 - [x] Follow other users. 
